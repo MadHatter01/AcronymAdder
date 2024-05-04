@@ -1,7 +1,7 @@
 // The module 'vscode' contains the VS Code extensibility API
 // Import the module and reference it with the alias vscode in your code below
 const vscode = require('vscode');
-
+const thesaurus = require('thesaurus');
 // This method is called when your extension is activated
 // Your extension is activated the very first time the command is executed
 
@@ -9,25 +9,49 @@ const vscode = require('vscode');
  * @param {vscode.ExtensionContext} context
  */
 function activate(context) {
-
-	// Use the console to output diagnostic information (console.log) and errors (console.error)
-	// This line of code will only be executed once when your extension is activated
 	console.log('Congratulations, your extension "acronymadder" is now active!');
+	let disposable = vscode.commands.registerCommand('acronymadder.showSynonym', function () {
 
-	// The command has been defined in the package.json file
-	// Now provide the implementation of the command with  registerCommand
-	// The commandId parameter must match the command field in package.json
-	let disposable = vscode.commands.registerCommand('acronymadder.helloWorld', function () {
-		// The code you place here will be executed every time your command is executed
-
-		// Display a message box to the user
+		const editor = vscode.window.activeTextEditor;
+        if (!editor) {
+            return;
+        }
+		const document = editor.document;
+        const wordRange = document.getWordRangeAtPosition(editor.selection.active);
+        if (!wordRange) {
+            return;
+        }
+		const word = document.getText(wordRange);
+        const synonyms = thesaurus.find(word);
+		vscode.window.showQuickPick(synonyms, {
+			placeHolder: 'Select a Synonym',
+			ignoreFocusOut: true
+		}).then(selected => {
+			if (selected) {
+				console.log(selected);
+				insertSynonyms(selected)
+			}
+		});
+   
 		vscode.window.showInformationMessage('Hello World from acronymadder!');
 	});
 
 	context.subscriptions.push(disposable);
 }
 
-// This method is called when your extension is deactivated
+function insertSynonyms(synonym) {
+    const editor = vscode.window.activeTextEditor;
+    if (!editor) {
+        return;
+    }
+
+    editor.edit(editBuilder => {
+        const selection = editor.selection;
+        editBuilder.replace(selection, synonym);
+    });
+}
+
+
 function deactivate() {}
 
 module.exports = {
